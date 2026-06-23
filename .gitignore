@@ -1,8 +1,19 @@
+# dependencies
 node_modules
+
+# next.js
 .next
 out
+next-env.d.ts
+
+# production / tooling
+.vercel
+*.tsbuildinfo
+
+# environment variables (keep the example tracked)
+.env*
+!.env.example
+
+# misc
 .DS_Store
 *.log
-.env*
-.vercel
-next-env.d.ts
