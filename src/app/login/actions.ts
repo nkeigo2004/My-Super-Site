@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 // ログイン
@@ -25,7 +26,17 @@ export async function signUp(formData: FormData) {
   const password = String(formData.get("password") ?? "");
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+
+  const hdrs = headers();
+  const origin =
+    hdrs.get("origin") ??
+    (hdrs.get("host") ? `https://${hdrs.get("host")}` : "");
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: origin ? { emailRedirectTo: `${origin}/auth/callback` } : undefined,
+  });
 
   if (error) {
     redirect("/login?error=" + encodeURIComponent(error.message));
