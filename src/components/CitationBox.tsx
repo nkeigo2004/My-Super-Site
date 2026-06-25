@@ -2,34 +2,58 @@
 
 import { useState } from "react";
 
+function normalizeUrl(u?: string | null) {
+  if (!u) return null;
+  const s = u.trim();
+  if (!s) return null;
+  return /^https?:\/\//i.test(s) ? s : "https://" + s;
+}
+
+// BibTeX 用の見出しキー（英数字のみ。日本語名でも壊れないようにフォールバック）
+function makeKey(
+  authors?: string | null,
+  title?: string | null,
+  year?: string | null,
+  id?: string,
+) {
+  const firstAuthor = (authors?.split(/[,、]/)[0] ?? "").trim().split(/\s+/).pop() ?? "";
+  let base = firstAuthor.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!base) base = (title ?? "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10);
+  if (!base) base = "ref" + (id ? id.slice(0, 4) : "");
+  return `${base}${year ?? ""}`;
+}
+
 export function CitationBox({
   title,
   authors,
   year,
   url,
+  id,
 }: {
   title: string;
   authors?: string | null;
   year?: string | null;
   url?: string | null;
+  id?: string;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
 
-  const firstAuthorLast =
-    (authors?.split(/[,、]/)[0] ?? "").trim().split(/\s+/).pop() || "author";
-  const key = `${firstAuthorLast.toLowerCase().replace(/[^a-z0-9]/g, "")}${year ?? ""}`;
+  const cleanTitle = title.replace(/\s+/g, " ").trim();
+  const cleanAuthors = (authors ?? "").replace(/\s+/g, " ").trim();
+  const link = normalizeUrl(url);
+  const key = makeKey(authors, title, year, id);
 
   const bibtex =
     `@misc{${key},\n` +
-    `  title  = {${title}},\n` +
-    (authors ? `  author = {${authors}},\n` : "") +
+    `  title  = {${cleanTitle}},\n` +
+    (cleanAuthors ? `  author = {${cleanAuthors}},\n` : "") +
     (year ? `  year   = {${year}},\n` : "") +
-    (url ? `  url    = {${url}},\n` : "") +
+    (link ? `  url    = {${link}},\n` : "") +
     `}`;
 
   const plain =
-    `${authors ? authors + ". " : ""}${title}.${year ? " " + year + "." : ""}${
-      url ? " " + url : ""
+    `${cleanAuthors ? cleanAuthors + ". " : ""}${cleanTitle}.${year ? " " + year + "." : ""}${
+      link ? " " + link : ""
     }`;
 
   const copy = async (text: string, which: string) => {

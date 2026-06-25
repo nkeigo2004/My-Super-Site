@@ -6,6 +6,7 @@ import { RichComposer } from "@/components/RichComposer";
 import { CitationBox } from "@/components/CitationBox";
 import { WorkForm } from "@/components/WorkForm";
 import { createClient } from "@/lib/supabase/server";
+import { site } from "@/content/site";
 import {
   editWork,
   deleteWork,
@@ -74,7 +75,9 @@ export default async function WorkDetailPage({
   const pdf = w.pdf_url || w.href || null;
   const dateIso = w.published_on ? `${w.published_on}T00:00:00` : w.created_at;
   const year = String(new Date(dateIso).getFullYear());
-  const citeUrl = pdf || (w.doi ? `https://doi.org/${w.doi}` : null);
+  const permalink = `${site.url}/research/${w.id}`;
+  const citeUrl =
+    pdf || (w.doi ? `https://doi.org/${w.doi}` : null) || permalink;
 
   // コメント
   const { data: wcomments } = await supabase
@@ -186,7 +189,7 @@ export default async function WorkDetailPage({
         <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-accent">
           Cite / 引用
         </p>
-        <CitationBox title={title} authors={w.authors} year={year} url={citeUrl} />
+        <CitationBox title={title} authors={w.authors} year={year} url={citeUrl} id={w.id} />
       </div>
 
       {/* 管理者：編集・削除 */}
