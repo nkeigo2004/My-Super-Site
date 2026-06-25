@@ -75,10 +75,14 @@ export async function deleteAccount(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  if (confirm !== "削除") {
+  // 自動翻訳で「削除」が「delete」等に訳されても消せるよう、両方を受け付ける
+  const ok = confirm === "削除" || confirm.toLowerCase() === "delete";
+  if (!ok) {
     redirect(
       "/settings?error=" +
-        encodeURIComponent("確認のため「削除」と入力してください"),
+        encodeURIComponent(
+          "確認のため「削除」または「delete」と入力してください / Type 削除 or delete to confirm",
+        ),
     );
   }
 

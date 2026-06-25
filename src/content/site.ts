@@ -3,4 +3,5 @@
 // ============================================================
 export const site = {
   name: "NK Cells",
+  url: "https://nkcells2004.com",
 };

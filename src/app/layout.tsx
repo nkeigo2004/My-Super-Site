@@ -26,8 +26,17 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
   title: { default: site.name, template: `%s ・ ${site.name}` },
   description: profile.tagline.ja,
+  openGraph: {
+    title: site.name,
+    description: profile.tagline.ja,
+    url: site.url,
+    siteName: site.name,
+    type: "website",
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({

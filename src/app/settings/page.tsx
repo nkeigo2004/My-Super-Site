@@ -166,19 +166,35 @@ export default async function SettingsPage({
 
               {/* 退会 */}
               <div className="rounded-md border border-red-400/30 bg-red-400/5 p-4">
-                <p className="text-sm font-medium text-red-400">退会（アカウント削除）</p>
+                <p className="text-sm font-medium text-red-400">
+                  {lang === "en" ? "Delete account" : "退会（アカウント削除）"}
+                </p>
                 <p className="mt-1 text-xs text-muted">
-                  アカウントと、あなたの投稿・コメント・プロフィールが完全に削除されます。この操作は取り消せません。
+                  {lang === "en"
+                    ? "Your account, posts, comments, and profile will be permanently deleted. This cannot be undone."
+                    : "アカウントと、あなたの投稿・コメント・プロフィールが完全に削除されます。この操作は取り消せません。"}
                 </p>
                 <form action={deleteAccount} className="mt-3 space-y-2">
                   <input
                     name="confirm"
-                    placeholder="確認のため「削除」と入力"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder={
+                      lang === "en"
+                        ? 'Type "delete" to confirm'
+                        : "確認のため「削除」または delete と入力"
+                    }
                     className="w-full max-w-xs rounded-md border border-line bg-bg/40 px-3 py-2 text-sm text-fg outline-none focus:border-red-400"
                   />
+                  <p className="text-[11px] text-muted/70">
+                    {lang === "en"
+                      ? 'Enter "delete" (or 削除).'
+                      : "「削除」または「delete」と入力してください。"}
+                  </p>
                   <div>
                     <button className="rounded-md border border-red-400/50 bg-red-400/10 px-3 py-1.5 text-xs text-red-400 transition-colors hover:bg-red-400/20">
-                      退会する
+                      {lang === "en" ? "Delete account" : "退会する"}
                     </button>
                   </div>
                 </form>
