@@ -71,7 +71,7 @@ export default async function HomePage() {
 
   const { data: featured } = await supabase
     .from("works")
-    .select("id, kind, title_ja, title_en, summary_ja, summary_en, meta")
+    .select("id, kind, title, title_ja, abstract, summary_ja, meta, category, published_on")
     .order("created_at", { ascending: false })
     .limit(2);
 
@@ -153,14 +153,18 @@ export default async function HomePage() {
                   {kindLabel[w.kind] ?? w.kind}
                 </p>
                 <h3 className="font-display text-lg font-medium tracking-tight">
-                  <Bi v={{ ja: w.title_ja, en: w.title_en }} enClass="mt-0.5 block text-sm font-normal text-muted" />
+                  <Link href={`/research/${w.id}`} className="hover:text-accent">
+                    {w.title || w.title_ja || "(untitled)"}
+                  </Link>
                 </h3>
-                {w.meta && (
-                  <p className="mt-2 font-mono text-xs text-muted">{w.meta}</p>
+                {(w.category || w.meta) && (
+                  <p className="mt-2 font-mono text-xs text-muted">{w.category || w.meta}</p>
                 )}
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  <Bi v={{ ja: w.summary_ja, en: w.summary_en }} enClass="mt-1.5 block text-muted/70" />
-                </p>
+                {(w.abstract || w.summary_ja) && (
+                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">
+                    {w.abstract || w.summary_ja}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

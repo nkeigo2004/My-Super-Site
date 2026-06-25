@@ -25,52 +25,60 @@ async function requireAdmin() {
   return supabase;
 }
 
-// 研究・制作物を追加（管理者）
-export async function createWork(formData: FormData) {
-  const supabase = await requireAdmin();
-  const kind = String(formData.get("kind") ?? "project");
-  const title_ja = String(formData.get("title_ja") ?? "").trim();
-  const title_en = String(formData.get("title_en") ?? "").trim();
-  const summary_ja = String(formData.get("summary_ja") ?? "").trim();
-  const summary_en = String(formData.get("summary_en") ?? "").trim();
-  const meta = String(formData.get("meta") ?? "").trim();
-  const href = String(formData.get("href") ?? "").trim();
-
-  if (!title_ja) {
-    redirect("/research?error=" + encodeURIComponent("日本語タイトルは必須です"));
-  }
-  const { error } = await supabase
-    .from("works")
-    .insert({ kind, title_ja, title_en, summary_ja, summary_en, meta, href });
-  if (error) redirect("/research?error=" + encodeURIComponent(error.message));
-  revalidatePath("/research");
-  revalidatePath("/");
-  redirect("/research?message=" + encodeURIComponent("追加しました"));
+function readFields(formData: FormData) {
+  const get = (k: string) => String(formData.get(k) ?? "").trim();
+  return {
+    kind: get("kind") || "paper",
+    title: get("title"),
+    authors: get("authors") || null,
+    abstract: get("abstract") || null,
+    body: get("body") || null,
+    category: get("category") || null,
+    keywords: get("keywords") || null,
+    published_on: get("published_on") || null,
+    pdf_url: get("pdf_url") || null,
+    code_url: get("code_url") || null,
+    doi: get("doi") || null,
+  };
 }
 
-// 研究・制作物を編集（管理者）
+// 論文・制作物を投稿（管理者）
+export async function createWork(formData: FormData) {
+  const supabase = await requireAdmin();
+  const fields = readFields(formData);
+  if (!fields.title) {
+    redirect("/research/new?error=" + encodeURIComponent("タイトルは必須です"));
+  }
+  const { data, error } = await supabase
+    .from("works")
+    .insert(fields)
+    .select("id")
+    .single();
+  if (error) {
+    redirect("/research/new?error=" + encodeURIComponent(error.message));
+  }
+  revalidatePath("/research");
+  revalidatePath("/");
+  redirect(`/research/${data.id}`);
+}
+
+// 論文・制作物を編集（管理者）
 export async function editWork(formData: FormData) {
   const supabase = await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/research");
-  const kind = String(formData.get("kind") ?? "project");
-  const title_ja = String(formData.get("title_ja") ?? "").trim();
-  const title_en = String(formData.get("title_en") ?? "").trim();
-  const summary_ja = String(formData.get("summary_ja") ?? "").trim();
-  const summary_en = String(formData.get("summary_en") ?? "").trim();
-  const meta = String(formData.get("meta") ?? "").trim();
-  const href = String(formData.get("href") ?? "").trim();
-
-  await supabase
-    .from("works")
-    .update({ kind, title_ja, title_en, summary_ja, summary_en, meta, href })
-    .eq("id", id);
+  const fields = readFields(formData);
+  if (!fields.title) {
+    redirect(`/research/${id}?error=` + encodeURIComponent("タイトルは必須です"));
+  }
+  await supabase.from("works").update(fields).eq("id", id);
   revalidatePath("/research");
+  revalidatePath(`/research/${id}`);
   revalidatePath("/");
-  redirect("/research?message=" + encodeURIComponent("更新しました"));
+  redirect(`/research/${id}`);
 }
 
-// 研究・制作物を削除（管理者）
+// 論文・制作物を削除（管理者）
 export async function deleteWork(formData: FormData) {
   const supabase = await requireAdmin();
   const id = String(formData.get("id") ?? "");
@@ -81,7 +89,7 @@ export async function deleteWork(formData: FormData) {
   redirect("/research");
 }
 
-// 研究へのコメント（ログインユーザー）
+// コメント（ログインユーザー）
 export async function createWorkComment(formData: FormData) {
   const workId = String(formData.get("work_id") ?? "");
   const content = String(formData.get("content") ?? "").trim();
@@ -101,13 +109,16 @@ export async function createWorkComment(formData: FormData) {
     content: content.slice(0, 1000),
     image_url: imageUrl || null,
   });
-  if (error) redirect("/research?error=" + encodeURIComponent(error.message));
-  revalidatePath("/research");
+  if (error) {
+    redirect(`/research/${workId}?error=` + encodeURIComponent(error.message));
+  }
+  revalidatePath(`/research/${workId}`);
 }
 
-// 自分の研究コメントを削除
+// 自分のコメントを削除
 export async function deleteWorkComment(formData: FormData) {
   const id = String(formData.get("id") ?? "");
+  const workId = String(formData.get("work_id") ?? "");
   if (!id) redirect("/research");
   const supabase = await createClient();
   const {
@@ -115,5 +126,5 @@ export async function deleteWorkComment(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   await supabase.from("work_comments").delete().eq("id", id);
-  revalidatePath("/research");
+  if (workId) revalidatePath(`/research/${workId}`);
 }
