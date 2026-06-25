@@ -122,6 +122,9 @@ export async function SiteHeader() {
                   <Link href={`/u/${user.id}`} className={itemCls}>
                     公開プロフィール
                   </Link>
+                  <Link href="/messages" className={itemCls}>
+                    メッセージ
+                  </Link>
                   <Link href="/requests" className={itemCls}>
                     フォローリクエスト
                   </Link>

@@ -199,6 +199,14 @@ export default async function PublicProfilePage({
               </button>
             </form>
           )}
+          {user && !isSelf && (
+            <Link
+              href={`/messages/${profile.id}`}
+              className="rounded-full border border-line px-4 py-1.5 text-xs text-muted transition-colors hover:border-accent hover:text-fg"
+            >
+              メッセージ
+            </Link>
+          )}
           {isSelf && (
             <Link
               href="/account"
