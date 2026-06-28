@@ -1,11 +1,10 @@
-import { ImageUploadField } from "@/components/ImageUploadField";
+import { NoteBodyEditor } from "@/components/NoteBodyEditor";
 
 type NoteLike = {
   title?: string | null;
   summary?: string | null;
   body?: string | null;
   tags?: string | null;
-  image_url?: string | null;
 };
 
 const inputCls =
@@ -18,30 +17,16 @@ export function NoteForm({
   hiddenId,
   userId,
   submitLabel,
-  withSlug = false,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   note?: NoteLike;
   hiddenId?: string;
   userId: string;
   submitLabel: string;
-  withSlug?: boolean;
 }) {
   return (
     <form action={action} className="space-y-4">
       {hiddenId && <input type="hidden" name="id" value={hiddenId} />}
-
-      {withSlug && (
-        <div>
-          <label className={labelCls}>slug（URLになる英数字・必須）</label>
-          <input
-            name="slug"
-            required
-            placeholder="例: my-first-note"
-            className={inputCls}
-          />
-        </div>
-      )}
 
       <div>
         <label className={labelCls}>タイトル（必須）</label>
@@ -55,18 +40,16 @@ export function NoteForm({
 
       <div>
         <label className={labelCls}>概要（一覧に出る短い説明・任意）</label>
-        <input name="summary" defaultValue={note?.summary ?? ""} className={inputCls} />
+        <input
+          name="summary"
+          defaultValue={note?.summary ?? ""}
+          className={inputCls}
+        />
       </div>
 
       <div>
-        <label className={labelCls}>本文（空行で段落が分かれます）</label>
-        <textarea
-          name="body"
-          rows={10}
-          defaultValue={note?.body ?? ""}
-          placeholder="段落を空行で区切ると、読者は段落ごとに『響いた』反応を残せます。"
-          className={`${inputCls} resize-y`}
-        />
+        <label className={labelCls}>本文</label>
+        <NoteBodyEditor userId={userId} defaultValue={note?.body ?? ""} />
       </div>
 
       <div>
@@ -79,10 +62,8 @@ export function NoteForm({
         />
       </div>
 
-      <ImageUploadField userId={userId} defaultUrl={note?.image_url ?? ""} />
-
       <p className="font-mono text-[11px] text-muted/70">
-        ※ 日本語だけで書けばOKです。海外の閲覧者はブラウザ翻訳で読めます。
+        ※ 日本語だけで書けばOKです。URL（slug）は自動で作られます。
       </p>
 
       <div className="flex justify-end">

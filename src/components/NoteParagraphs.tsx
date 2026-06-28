@@ -3,15 +3,19 @@
 import { useState, useTransition } from "react";
 import { reactParagraph } from "@/app/notes/actions";
 
+export type Block =
+  | { type: "text"; content: string }
+  | { type: "image"; content: string };
+
 export function NoteParagraphs({
-  paragraphs,
+  blocks,
   noteId,
   initialCounts,
   initialMine,
   canReact,
   maxCount,
 }: {
-  paragraphs: string[];
+  blocks: Block[];
   noteId: string;
   initialCounts: number[];
   initialMine: boolean[];
@@ -37,27 +41,41 @@ export function NoteParagraphs({
   };
 
   return (
-    <div className="space-y-5">
-      {paragraphs.map((p, i) => {
+    <div className="space-y-7">
+      {blocks.map((b, i) => {
+        if (b.type === "image") {
+          return (
+            <figure key={i} className="my-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={b.content}
+                alt=""
+                className="mx-auto max-h-[32rem] w-full rounded-lg border border-line object-contain"
+              />
+            </figure>
+          );
+        }
         const count = counts[i] ?? 0;
         const reacted = mine[i] ?? false;
         const hot = maxCount > 0 && count === maxCount && count > 0;
         return (
           <div
             key={i}
-            className={`rounded-md py-1 pl-4 transition-colors ${
-              hot ? "border-l-2 border-accent/60" : "border-l-2 border-transparent"
+            className={`group rounded-md pl-4 transition-colors ${
+              hot ? "border-l-2 border-accent/50" : "border-l-2 border-transparent"
             }`}
           >
-            <p className="whitespace-pre-line leading-relaxed text-fg/90">{p}</p>
+            <p className="whitespace-pre-line text-[1.05rem] leading-8 text-fg/90">
+              {b.content}
+            </p>
             <button
               onClick={() => tap(i)}
               disabled={!canReact}
               title={canReact ? "この段落が響いたら押す" : "ログインすると押せます"}
-              className={`mt-1.5 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
+              className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
                 reacted
                   ? "border-accent/50 bg-accent/10 text-accent"
-                  : "border-line text-muted/60 hover:border-accent hover:text-fg"
+                  : "border-line text-muted/50 hover:border-accent hover:text-fg"
               }`}
             >
               {reacted ? "♥" : "♡"} 響いた{count > 0 ? ` ${count}` : ""}

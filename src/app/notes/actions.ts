@@ -21,45 +21,41 @@ async function requireAdmin() {
   return supabase;
 }
 
-function cleanSlug(s: string) {
-  return s
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+// 本文の最初の画像をサムネ（image_url）に使う
+function firstImageUrl(body: string): string | null {
+  const md = body.match(/!\[[^\]]*\]\((.+?)\)/);
+  if (md) return md[1];
+  const bare = body.match(/https?:\/\/\S+\.(?:png|jpe?g|gif|webp)(?:\?\S*)?/i);
+  return bare ? bare[0] : null;
 }
 
-// ノートを追加（管理者・単一言語）
+// 日本語タイトルでも確実に作れるよう、slug は自動生成する
+function autoSlug() {
+  return `n-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// ノートを追加（管理者・単一言語・slug自動）
 export async function createNote(formData: FormData) {
   const supabase = await requireAdmin();
-  const slug = cleanSlug(String(formData.get("slug") ?? ""));
   const title = String(formData.get("title") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   const tags = String(formData.get("tags") ?? "").trim();
-  const image_url = String(formData.get("image_url") ?? "").trim();
 
-  if (!slug || !title) {
-    redirect("/notes?error=" + encodeURIComponent("slug とタイトルは必須です"));
+  if (!title) {
+    redirect("/notes?error=" + encodeURIComponent("タイトルは必須です"));
   }
 
   const { error } = await supabase.from("notes").insert({
-    slug,
+    slug: autoSlug(),
     title,
     summary,
     body,
     tags,
-    image_url: image_url || null,
+    image_url: firstImageUrl(body),
   });
   if (error) {
-    redirect(
-      "/notes?error=" +
-        encodeURIComponent(
-          error.message.includes("duplicate")
-            ? "その slug は既に使われています"
-            : error.message,
-        ),
-    );
+    redirect("/notes?error=" + encodeURIComponent(error.message));
   }
   revalidatePath("/notes");
   revalidatePath("/");
@@ -75,11 +71,11 @@ export async function editNote(formData: FormData) {
   const summary = String(formData.get("summary") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   const tags = String(formData.get("tags") ?? "").trim();
-  const image_url = String(formData.get("image_url") ?? "").trim();
+  const image_url = firstImageUrl(body);
 
   await supabase
     .from("notes")
-    .update({ title, summary, body, tags, image_url: image_url || null })
+    .update({ title, summary, body, tags, image_url })
     .eq("id", id);
   revalidatePath("/notes");
   revalidatePath("/");

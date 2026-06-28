@@ -43,7 +43,7 @@ export default async function NotesPage({
   const { data: notes } = await supabase
     .from("notes")
     .select(
-      "id, slug, title, title_ja, summary, summary_ja, tags, image_url, created_at",
+      "id, slug, title, title_ja, summary, summary_ja, body, body_ja, tags, image_url, created_at",
     )
     .order("created_at", { ascending: false });
 
@@ -75,7 +75,6 @@ export default async function NotesPage({
               action={createNote}
               userId={user?.id ?? ""}
               submitLabel="追加"
-              withSlug
             />
           </div>
         </details>
@@ -138,9 +137,8 @@ export default async function NotesPage({
                         note={{
                           title: n.title ?? n.title_ja,
                           summary: n.summary ?? n.summary_ja,
-                          body: null,
+                          body: n.body ?? n.body_ja,
                           tags: n.tags,
-                          image_url: n.image_url,
                         }}
                         hiddenId={n.id}
                         userId={user?.id ?? ""}

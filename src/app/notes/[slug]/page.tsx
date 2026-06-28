@@ -21,11 +21,20 @@ function tagList(tags?: string | null) {
     .filter(Boolean);
 }
 
-function splitParagraphs(body: string) {
+type Block = { type: "text"; content: string } | { type: "image"; content: string };
+
+function splitBlocks(body: string): Block[] {
   return body
     .split(/\n\s*\n/)
     .map((p) => p.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((p) => {
+      const md = p.match(/^!\[[^\]]*\]\((.+?)\)$/);
+      if (md) return { type: "image" as const, content: md[1] };
+      const bare = p.match(/^https?:\/\/\S+\.(?:png|jpe?g|gif|webp)(?:\?\S*)?$/i);
+      if (bare) return { type: "image" as const, content: p };
+      return { type: "text" as const, content: p };
+    });
 }
 
 export async function generateMetadata({
@@ -65,21 +74,24 @@ export default async function NotePage({
   const title = note.title || note.title_ja || "(untitled)";
   const summary = note.summary || note.summary_ja || "";
   const body = note.body || note.body_ja || "";
-  const paragraphs = splitParagraphs(body);
+  const blocks = splitBlocks(body);
 
-  // 読書時間（日本語 ~500字/分の目安）
-  const minutes = Math.max(1, Math.round(body.replace(/\s/g, "").length / 500));
+  // 読書時間（日本語 ~500字/分の目安。画像URLは除外）
+  const textLen = blocks
+    .filter((b) => b.type === "text")
+    .reduce((n, b) => n + b.content.replace(/\s/g, "").length, 0);
+  const minutes = Math.max(1, Math.round(textLen / 500));
 
-  // 段落「響いた」
+  // 段落「響いた」（index はブロック単位）
   const { data: pr } = await supabase
     .from("note_para_reactions")
     .select("para_index, user_id")
     .eq("note_id", note.id);
-  const counts = new Array(paragraphs.length).fill(0);
-  const mine = new Array(paragraphs.length).fill(false);
+  const counts = new Array(blocks.length).fill(0);
+  const mine = new Array(blocks.length).fill(false);
   for (const r of pr ?? []) {
     const idx = r.para_index as number;
-    if (idx >= 0 && idx < paragraphs.length) {
+    if (idx >= 0 && idx < blocks.length) {
       counts[idx]++;
       if (user && r.user_id === user.id) mine[idx] = true;
     }
@@ -134,20 +146,11 @@ export default async function NotePage({
         </div>
       )}
 
-      {note.image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={note.image_url}
-          alt=""
-          className="mt-6 max-h-96 rounded-md border border-line"
-        />
-      )}
-
-      {/* 本文（段落ごとに「響いた」を押せる） */}
+      {/* 本文（段落ごとに「響いた」／画像は本文中に表示） */}
       <div className="mt-8 max-w-2xl border-t border-line pt-8">
-        {paragraphs.length > 0 ? (
+        {blocks.length > 0 ? (
           <NoteParagraphs
-            paragraphs={paragraphs}
+            blocks={blocks}
             noteId={note.id}
             initialCounts={counts}
             initialMine={mine}
@@ -157,7 +160,7 @@ export default async function NotePage({
         ) : (
           <p className="text-sm text-muted">本文がありません。</p>
         )}
-        <p className="mt-4 font-mono text-[11px] text-muted/60">
+        <p className="mt-6 font-mono text-[11px] text-muted/60">
           ※ 心に残った段落の「♡ 響いた」を押すと、書き手に届きます。
         </p>
       </div>
