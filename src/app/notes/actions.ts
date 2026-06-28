@@ -29,31 +29,25 @@ function cleanSlug(s: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-// ノートを追加（管理者）
+// ノートを追加（管理者・単一言語）
 export async function createNote(formData: FormData) {
   const supabase = await requireAdmin();
   const slug = cleanSlug(String(formData.get("slug") ?? ""));
-  const title_ja = String(formData.get("title_ja") ?? "").trim();
-  const title_en = String(formData.get("title_en") ?? "").trim();
-  const summary_ja = String(formData.get("summary_ja") ?? "").trim();
-  const summary_en = String(formData.get("summary_en") ?? "").trim();
-  const body_ja = String(formData.get("body_ja") ?? "").trim();
-  const body_en = String(formData.get("body_en") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const summary = String(formData.get("summary") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
   const tags = String(formData.get("tags") ?? "").trim();
   const image_url = String(formData.get("image_url") ?? "").trim();
 
-  if (!slug || !title_ja) {
-    redirect("/notes?error=" + encodeURIComponent("slug と日本語タイトルは必須です"));
+  if (!slug || !title) {
+    redirect("/notes?error=" + encodeURIComponent("slug とタイトルは必須です"));
   }
 
   const { error } = await supabase.from("notes").insert({
     slug,
-    title_ja,
-    title_en,
-    summary_ja,
-    summary_en,
-    body_ja,
-    body_en,
+    title,
+    summary,
+    body,
     tags,
     image_url: image_url || null,
   });
@@ -72,23 +66,20 @@ export async function createNote(formData: FormData) {
   redirect("/notes?message=" + encodeURIComponent("追加しました"));
 }
 
-// ノートを編集（管理者）
+// ノートを編集（管理者・単一言語）
 export async function editNote(formData: FormData) {
   const supabase = await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/notes");
-  const title_ja = String(formData.get("title_ja") ?? "").trim();
-  const title_en = String(formData.get("title_en") ?? "").trim();
-  const summary_ja = String(formData.get("summary_ja") ?? "").trim();
-  const summary_en = String(formData.get("summary_en") ?? "").trim();
-  const body_ja = String(formData.get("body_ja") ?? "").trim();
-  const body_en = String(formData.get("body_en") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const summary = String(formData.get("summary") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
   const tags = String(formData.get("tags") ?? "").trim();
   const image_url = String(formData.get("image_url") ?? "").trim();
 
   await supabase
     .from("notes")
-    .update({ title_ja, title_en, summary_ja, summary_en, body_ja, body_en, tags, image_url: image_url || null })
+    .update({ title, summary, body, tags, image_url: image_url || null })
     .eq("id", id);
   revalidatePath("/notes");
   revalidatePath("/");
@@ -104,4 +95,107 @@ export async function deleteNote(formData: FormData) {
   revalidatePath("/notes");
   revalidatePath("/");
   redirect("/notes");
+}
+
+// ノート全体への絵文字リアクション（ログインユーザー・トグル）
+export async function toggleNoteReaction(formData: FormData) {
+  const noteId = String(formData.get("note_id") ?? "");
+  const slug = String(formData.get("slug") ?? "");
+  const emoji = String(formData.get("emoji") ?? "");
+  if (!noteId || !emoji) redirect(`/notes/${slug}`);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: existing } = await supabase
+    .from("note_reactions")
+    .select("emoji")
+    .eq("note_id", noteId)
+    .eq("user_id", user.id)
+    .eq("emoji", emoji)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("note_reactions")
+      .delete()
+      .eq("note_id", noteId)
+      .eq("user_id", user.id)
+      .eq("emoji", emoji);
+  } else {
+    await supabase
+      .from("note_reactions")
+      .insert({ note_id: noteId, user_id: user.id, emoji });
+  }
+  revalidatePath(`/notes/${slug}`);
+}
+
+// 段落ごとの「響いた」リアクション（ログインユーザー・トグル）
+export async function toggleParaReaction(formData: FormData) {
+  const noteId = String(formData.get("note_id") ?? "");
+  const slug = String(formData.get("slug") ?? "");
+  const paraIndex = parseInt(String(formData.get("para_index") ?? ""), 10);
+  if (!noteId || Number.isNaN(paraIndex)) redirect(`/notes/${slug}`);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: existing } = await supabase
+    .from("note_para_reactions")
+    .select("para_index")
+    .eq("note_id", noteId)
+    .eq("user_id", user.id)
+    .eq("para_index", paraIndex)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("note_para_reactions")
+      .delete()
+      .eq("note_id", noteId)
+      .eq("user_id", user.id)
+      .eq("para_index", paraIndex);
+  } else {
+    await supabase
+      .from("note_para_reactions")
+      .insert({ note_id: noteId, user_id: user.id, para_index: paraIndex });
+  }
+  revalidatePath(`/notes/${slug}`);
+}
+
+// 段落「響いた」をクライアントから直接呼ぶ版（リロードなし・楽観更新用）
+export async function reactParagraph(noteId: string, paraIndex: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, reacted: false };
+
+  const { data: existing } = await supabase
+    .from("note_para_reactions")
+    .select("para_index")
+    .eq("note_id", noteId)
+    .eq("user_id", user.id)
+    .eq("para_index", paraIndex)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("note_para_reactions")
+      .delete()
+      .eq("note_id", noteId)
+      .eq("user_id", user.id)
+      .eq("para_index", paraIndex);
+    return { ok: true as const, reacted: false };
+  }
+  await supabase
+    .from("note_para_reactions")
+    .insert({ note_id: noteId, user_id: user.id, para_index: paraIndex });
+  return { ok: true as const, reacted: true };
 }
