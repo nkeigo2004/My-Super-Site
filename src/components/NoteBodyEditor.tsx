@@ -79,37 +79,51 @@ export function NoteBodyEditor({
   }
 
   async function onPickImages(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
+    // 先に File を配列で確保（input をクリアしても消えないように）
+    const files = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = "";
-    if (!files || files.length === 0) return;
+    if (files.length === 0) return;
     setError("");
     setUploading(true);
-    const added: Block[] = [];
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) {
-        setError("画像ファイルを選んでください");
-        continue;
+    try {
+      const added: Block[] = [];
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) {
+          setError("画像ファイルを選んでください");
+          continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          setError("画像は5MBまでにしてください");
+          continue;
+        }
+        const safe = file.name.replace(/[^\w.\-]/g, "_");
+        const p = `${userId}/note-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 7)}-${safe}`;
+        const { error: upErr } = await supabase.storage
+          .from("post-images")
+          .upload(p, file, { upsert: false });
+        if (upErr) {
+          setError("アップロード失敗: " + upErr.message);
+          continue;
+        }
+        const { data } = supabase.storage.from("post-images").getPublicUrl(p);
+        added.push({
+          id: nextId(),
+          type: "image",
+          url: data.publicUrl,
+          caption: "",
+        });
       }
-      if (file.size > 5 * 1024 * 1024) {
-        setError("画像は5MBまでにしてください");
-        continue;
-      }
-      const safe = file.name.replace(/[^\w.\-]/g, "_");
-      const p = `${userId}/note-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 7)}-${safe}`;
-      const { error: upErr } = await supabase.storage
-        .from("post-images")
-        .upload(p, file, { upsert: false });
-      if (upErr) {
-        setError(upErr.message);
-        continue;
-      }
-      const { data } = supabase.storage.from("post-images").getPublicUrl(p);
-      added.push({ id: nextId(), type: "image", url: data.publicUrl, caption: "" });
+      if (added.length) insertAfterFocus(added);
+    } catch (err) {
+      setError(
+        "アップロード中にエラー: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    } finally {
+      setUploading(false);
     }
-    if (added.length) insertAfterFocus(added);
-    setUploading(false);
   }
 
   function addTextBlock() {
