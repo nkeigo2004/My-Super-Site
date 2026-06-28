@@ -21,7 +21,9 @@ function tagList(tags?: string | null) {
     .filter(Boolean);
 }
 
-type Block = { type: "text"; content: string } | { type: "image"; content: string };
+type Block =
+  | { type: "text"; content: string }
+  | { type: "image"; content: string; caption?: string };
 
 function splitBlocks(body: string): Block[] {
   return body
@@ -29,8 +31,9 @@ function splitBlocks(body: string): Block[] {
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p) => {
-      const md = p.match(/^!\[[^\]]*\]\((.+?)\)$/);
-      if (md) return { type: "image" as const, content: md[1] };
+      const md = p.match(/^!\[([^\]]*)\]\((.+?)\)$/);
+      if (md)
+        return { type: "image" as const, content: md[2], caption: md[1] || undefined };
       const bare = p.match(/^https?:\/\/\S+\.(?:png|jpe?g|gif|webp)(?:\?\S*)?$/i);
       if (bare) return { type: "image" as const, content: p };
       return { type: "text" as const, content: p };

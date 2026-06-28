@@ -5,7 +5,7 @@ import { reactParagraph } from "@/app/notes/actions";
 
 export type Block =
   | { type: "text"; content: string }
-  | { type: "image"; content: string };
+  | { type: "image"; content: string; caption?: string };
 
 export function NoteParagraphs({
   blocks,
@@ -49,9 +49,14 @@ export function NoteParagraphs({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={b.content}
-                alt=""
+                alt={b.caption ?? ""}
                 className="mx-auto max-h-[32rem] w-full rounded-lg border border-line object-contain"
               />
+              {b.caption && (
+                <figcaption className="mt-2 text-center text-xs text-muted">
+                  {b.caption}
+                </figcaption>
+              )}
             </figure>
           );
         }
