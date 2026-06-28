@@ -65,6 +65,7 @@ export function NoteBodyEditor({
   const [focusIndex, setFocusIndex] = useState<number>(initial.length - 1);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState<Record<number, boolean>>({});
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const body = serialize(blocks);
@@ -225,8 +226,27 @@ export function NoteBodyEditor({
                 <img
                   src={b.url}
                   alt={b.caption}
+                  onError={() =>
+                    setLoadError((m) => ({ ...m, [b.id]: true }))
+                  }
+                  onLoad={() =>
+                    setLoadError((m) => ({ ...m, [b.id]: false }))
+                  }
                   className="mx-auto max-h-80 w-full rounded-md border border-line object-contain"
                 />
+                {loadError[b.id] && (
+                  <p className="mt-2 rounded border border-red-400/30 bg-red-400/10 px-2 py-1 text-[11px] text-red-400">
+                    画像を読み込めません。バケットの公開設定（post-images を Public）を確認してください。
+                    <a
+                      href={b.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-1 underline"
+                    >
+                      URLを開いて確認
+                    </a>
+                  </p>
+                )}
                 <input
                   value={b.caption}
                   onFocus={() => setFocusIndex(i)}
