@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LocalTime } from "@/components/LocalTime";
 import { Section } from "@/components/Section";
 import { createClient } from "@/lib/supabase/server";
+import { safeHref } from "@/lib/url";
 
 export const metadata: Metadata = { title: "Research" };
 
@@ -90,7 +91,7 @@ export default async function ResearchPage({
           const title = w.title || w.title_ja || "(untitled)";
           const abstract = w.abstract || w.summary_ja || "";
           const kws = splitKeywords(w.keywords);
-          const pdf = w.pdf_url || w.href || null;
+          const pdf = safeHref(w.pdf_url || w.href);
           const dateIso = w.published_on
             ? `${w.published_on}T00:00:00`
             : w.created_at;
@@ -137,9 +138,9 @@ export default async function ResearchPage({
                     PDF ↗
                   </a>
                 )}
-                {w.code_url && (
+                {safeHref(w.code_url) && (
                   <a
-                    href={w.code_url}
+                    href={safeHref(w.code_url)}
                     target="_blank"
                     rel="noreferrer"
                     className="text-muted transition-colors hover:text-fg"

@@ -7,6 +7,7 @@ import { CitationBox } from "@/components/CitationBox";
 import { WorkForm } from "@/components/WorkForm";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/content/site";
+import { safeHref } from "@/lib/url";
 import {
   editWork,
   deleteWork,
@@ -72,7 +73,7 @@ export default async function WorkDetailPage({
   const title = w.title || w.title_ja || "(untitled)";
   const abstract = w.abstract || w.summary_ja || "";
   const kws = splitKeywords(w.keywords);
-  const pdf = w.pdf_url || w.href || null;
+  const pdf = safeHref(w.pdf_url || w.href);
   const dateIso = w.published_on ? `${w.published_on}T00:00:00` : w.created_at;
   const year = String(new Date(dateIso).getFullYear());
   const permalink = `${site.url}/research/${w.id}`;
@@ -141,9 +142,9 @@ export default async function WorkDetailPage({
             PDF を開く ↗
           </a>
         )}
-        {w.code_url && (
+        {safeHref(w.code_url) && (
           <a
-            href={w.code_url}
+            href={safeHref(w.code_url)}
             target="_blank"
             rel="noreferrer"
             className="rounded-md border border-line px-4 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-fg"

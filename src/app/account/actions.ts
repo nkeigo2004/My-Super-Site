@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeSavedUrl } from "@/lib/url";
 
 // プロフィールを更新する
 export async function updateProfile(formData: FormData) {
@@ -51,15 +52,19 @@ export async function updateProfile(formData: FormData) {
 // 他サービスへのリンクを追加
 export async function addLink(formData: FormData) {
   const label = String(formData.get("label") ?? "").trim().slice(0, 30);
-  let url = String(formData.get("url") ?? "").trim();
-  if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+  const raw = String(formData.get("url") ?? "").trim();
+  const url = normalizeSavedUrl(raw);
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if (!url) redirect("/account");
+  if (!url) {
+    redirect(
+      "/account?error=" + encodeURIComponent("有効なURL（http/https）を入力してください"),
+    );
+  }
 
   await supabase.from("profile_links").insert({
     user_id: user.id,

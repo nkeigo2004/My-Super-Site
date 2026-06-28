@@ -3,6 +3,7 @@ import { LocalTime } from "@/components/LocalTime";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { cellOfDay } from "@/lib/cell";
+import { safeHref } from "@/lib/url";
 import { toggleFollow } from "./actions";
 
 export async function generateMetadata({
@@ -235,7 +236,7 @@ export default async function PublicProfilePage({
             {links.map((l) => (
               <a
                 key={l.id}
-                href={l.url}
+                href={safeHref(l.url) ?? "#"}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-md border border-line bg-surface/30 px-3 py-1.5 text-sm text-accent transition-colors hover:border-accent"

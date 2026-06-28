@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeSavedUrl } from "@/lib/url";
 
 function nameFromEmail(email: string | undefined) {
   return email ? email.split("@")[0] : "user";
@@ -36,8 +37,8 @@ function readFields(formData: FormData) {
     category: get("category") || null,
     keywords: get("keywords") || null,
     published_on: get("published_on") || null,
-    pdf_url: get("pdf_url") || null,
-    code_url: get("code_url") || null,
+    pdf_url: normalizeSavedUrl(get("pdf_url")),
+    code_url: normalizeSavedUrl(get("code_url")),
     doi: get("doi") || null,
   };
 }
