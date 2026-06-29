@@ -211,6 +211,16 @@ export default async function CommunityPage({
       {/* リロード無しで最新化 */}
       <RealtimeRefresh />
 
+      {/* ラジオ／ポッドキャストへの導線 */}
+      <Link
+        href="/community/radio"
+        className="mb-5 flex items-center gap-3 rounded-lg border border-line bg-surface/20 px-4 py-3 transition-colors hover:border-accent"
+      >
+        <span className="text-xl">🎙</span>
+        <span className="flex-1 text-sm text-fg">ラジオ / ポッドキャスト</span>
+        <span className="font-mono text-xs text-accent">聴く →</span>
+      </Link>
+
       {/* 検索 */}
       <form method="get" action="/search" className="mb-5 flex items-center gap-2">
         <input

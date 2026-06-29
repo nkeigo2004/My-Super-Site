@@ -71,6 +71,7 @@ export async function SiteHeader() {
             <summary className={summaryCls}>Community ▾</summary>
             <div className={menuCls}>
               <Link href="/community" className={itemCls}>VoiceUP</Link>
+              <Link href="/community/radio" className={itemCls}>ラジオ</Link>
               <Link href="/live" className={itemCls}>LIVE</Link>
             </div>
           </details>
