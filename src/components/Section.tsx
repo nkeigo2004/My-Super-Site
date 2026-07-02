@@ -29,7 +29,7 @@ export function Section({
             </p>
           )}
           {title && (
-            <h2 className="font-display text-2xl font-semibold tracking-tight">
+            <h2 className="gradient-text font-display text-2xl font-semibold tracking-tight">
               {localizeTitle(title, lang)}
             </h2>
           )}
