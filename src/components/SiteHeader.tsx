@@ -2,6 +2,7 @@ import Link from "next/link";
 import { site } from "@/content/site";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/login/actions";
+import { SearchTrigger } from "@/components/SearchTrigger";
 
 const summaryCls =
   "flex cursor-pointer list-none items-center gap-1 rounded px-2.5 py-1.5 text-muted transition-colors hover:text-fg [&::-webkit-details-marker]:hidden";
@@ -52,6 +53,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="flex flex-wrap items-center gap-0.5 font-mono text-xs">
+          <SearchTrigger />
           <Link href="/about" className="rounded px-2.5 py-1.5 text-muted transition-colors hover:text-fg">
             About
           </Link>
